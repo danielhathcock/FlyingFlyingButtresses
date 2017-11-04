@@ -96,7 +96,7 @@ def getBottomRight(imageEdges: np.array):
     # Find the y value
     yBottom = yMinOffset
     bestY = 0
-    minYNum = (bestX * 255) * 1 // 2
+    minYNum = (bestX * 255) * 3 // 7
 
     while yBottom < imageEdges.shape[0]:
         if sum(imageEdges[yBottom, 0:5]) != 0:
@@ -127,11 +127,12 @@ def findActiveWindow():
     """
     Finds the active window in each image
     """
+    numWrong = 0
 
     # For each image
     for imgNum in range(IMAGE_NUM_START, IMAGE_NUM_STOP):
         if imgNum % 100 == 0:
-            print('Processed {} images'.format(imgNum))
+            print('Processed {} images, {} wrong'.format(imgNum, numWrong))
 
         imgPath = DATA_PATH / Path(FILE_FORMAT.format(imgNum))
 
@@ -152,17 +153,20 @@ def findActiveWindow():
         bottomGuess = guesses[1] + topLeft[1]
         # print('Found {}, actual {}'.format(guesses, (labels[imgNum - 1][1][0] - topLeft[0], labels[imgNum - 1][1][1] - topLeft[1])))
 
-        if abs(rightGuess - labels[imgNum - 1][1][0]) > 2:
-            print('Found {}, actual {}'.format((rightGuess, bottomGuess), labels[imgNum - 1][1]))
-
-        # if abs(rightGuess - labels[imgNum - 1][1][0]) + abs(bottomGuess - labels[imgNum - 1][1][1]) > 5:
+        # if abs(rightGuess - labels[imgNum - 1][1][0]) > 2:
         #     print('Found {}, actual {}'.format((rightGuess, bottomGuess), labels[imgNum - 1][1]))
+
+        if abs(rightGuess - labels[imgNum - 1][1][0]) + abs(bottomGuess - labels[imgNum - 1][1][1]) > 5:
+            # print('Found {}, actual {}'.format((rightGuess, bottomGuess), labels[imgNum - 1][1]))
+            numWrong += 1
 
         # plt.subplot(121), plt.imshow(imgCropped, cmap='gray')
         # plt.title('Original Image'), plt.xticks([]), plt.yticks([])
         # plt.subplot(122), plt.imshow(edges, cmap='gray')
         # plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
         # plt.show()
+
+    print(numWrong / IMAGE_NUM_STOP)
 
 if __name__ == '__main__':
     findActiveWindow()

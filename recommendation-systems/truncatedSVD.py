@@ -1,14 +1,40 @@
+import random
+
 from sklearn.decomposition import TruncatedSVD
 from sklearn.random_projection import sparse_random_matrix
 from sklearn.cluster import KMeans
-from scipy.sparse import csr_matrix
 from file_reader import FileReader
 from Splitter import splits
 from Tester import *
 
-def predict(prod):
+def predict(prod, products, ans, inverseAns):
 
-    print("Got inside Method")
+    # print("Got inside Method")
+
+    try:
+        index = products[prod]
+        # print('not rip')
+    except KeyError:
+        print('rip')
+        return []
+
+    cluster = ans[index]
+
+    predictions = inverseAns[cluster]
+    predictions = random.sample(predictions, min(len(predictions), 10))
+
+    return predictions
+
+def learn():
+    # splits()
+    print("Done Splitting...")
+
+    tester = Tester()
+    test_set = tester.getTestSet()
+
+    print("Finished tester Stuff")
+
+    answers = []
 
     reader = FileReader("training.txt")
     X = reader.read_file()
@@ -20,46 +46,30 @@ def predict(prod):
 
     print("Done with SVD, starting K Means...")
 
-    km = KMeans(n_clusters=5, max_iter=100, n_init=1)
+    km = KMeans(n_clusters=100)
     ans = km.fit_predict(dense)
-    centroids = svd.inverse_transform(km.cluster_centers_)
-
-    index = reader.product[prod]
-    cluster = km.predict(dense[index].reshape(1, -1))
 
     print("Done with K Means...")
 
-    predictions = []
-    for key in reader.product.keys():
-        ind = reader.product[key]
-        if ind < len(ans):
-            if ans[ind] == cluster:
-                predictions.append(key)
+    inverseAns = {cluster: [] for cluster in range(100)}
+    # centroids = svd.inverse_transform(km.cluster_centers_)
+    for trainingProdKey, trainingProdIndex in reader.product.items():
+        inverseAns[ans[trainingProdIndex]].append(trainingProdKey)
 
-    return predictions
-
-def learn():
-    splits()
-    print("Done Splitting...")
-
-    tester = Tester()
-    test_set = tester.getTestSet()
-
-    print("Finished tester STuff")
-
-    answers = []
+    print('Done inverting clusters')
 
     i = 0
     for prod in test_set:
-        print("Inside Loop")
-        answers.append(predict(prod))
+        # print("Inside Loop")
+        answers.append(predict(prod, reader.product, ans, inverseAns))
 
-        for f in range(1, 10):  # Documents how far along I am.
-            if i >= f * len(test_set) // 10:
-                print("Done with " + str(f) + "0% of learning...")
+        if i % (len(test_set) // 100) == 0:
+            print("\rDone with {}% of predicting...".format(i / len(test_set)), end='')
         i = i + 1
 
+    print()
     print(tester.checkAnswers(answers))
+
 
 if __name__== '__main__':
     learn()

@@ -1,50 +1,76 @@
 import itertools
 import collections
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, dok_matrix
 
 class FileReader:
     def __init__(self, path):
         text_file = open(path, "r")
-        self.lines = text_file.read().split("\n")
+        self.lines = text_file.read().strip().split("\n")
         text_file.close()
 
-        size = 0
+        print('read')
+
+        self.size = 0
         self.product = dict()  # Dictionary product is a dictionary : maps ID to integer
 
         # Map ID to integer
         for line in self.lines:
-            words = line.split(",")
-            for word in words:
-                if word not in self.product.keys():
-                    self.product[word] = size
-                    size = size + 1
+            for word in line.split(","):
+                if word not in self.product:
+                    self.product[word] = self.size
+                    self.size += 1
 
-        self.real_data = collections.defaultdict(lambda: collections.defaultdict(int))  # POPULATING DATA
+        print('assigned ids, there are {} products'.format(self.size))
 
+        self.real_data = collections.defaultdict(int)  # POPULATING DATA
+
+        self.numNonzero = 0
+        print(len(self.lines))
+        i = 0
+        maxVal = 0
         for line in self.lines:
+            if i % (len(self.lines) // 10) == 0:
+                print('\r{}/{}'.format(i, len(self.lines)), end='')
             words = line.split(",")
-            pairwise = list(itertools.combinations(words, 2))  # with replacement?
+            pairwise = itertools.combinations_with_replacement(words, 2)  # with replacement?
             for pair in pairwise:
-                self.real_data[self.product[pair[0]]][self.product[pair[1]]] = self.real_data[self.product[pair[0]]][self.product[pair[1]]] + 1
+                if self.real_data[ (self.product[pair[0]], self.product[pair[1]]) ] == 0:
+                    self.numNonzero += 2
+                self.real_data[ (self.product[pair[0]], self.product[pair[1]]) ] += 1
+                maxVal = max(maxVal, self.real_data[ (self.product[pair[0]], self.product[pair[1]]) ])
+            i += 1
+
+
+        print(maxVal, self.numNonzero)
 
 
     def read_file(self, testing=True):
-        data = list()  # from 1 to k
-        row_ind = list()  # from 1 to k
-        col_ind = list()  # from 1 to k
 
-        for word_1 in self.product.keys():
-            for word_2 in self.product.keys():
-                if self.real_data[self.product[word_1]][self.product[word_2]] != 0:
-                    row_ind.append(self.product[word_1])
-                    col_ind.append(self.product[word_2])
-                    data.append(self.real_data[self.product[word_1]][self.product[word_2]])
+        sparse = dok_matrix((self.size, self.size))
+        print('Created matrix')
 
-        X = csr_matrix((data, (row_ind, col_ind)))
+        num = len(self.real_data)
+        i = 0
+        for a, b in self.real_data:
+            if i % (num // 10) == 0:
+                print('\r{}/{}'.format(i, num), end='')
+            if self.real_data[(a, b)] == 0:
+                print('rip?')
+            else:
+                sparse[a, b] = self.real_data[(a, b)]
+            i += 1
+
+        X = csr_matrix(sparse)
+        print(X.nnz)
 
         return X
 
 
 
+
+if __name__ == '__main__':
+    f = FileReader('../product_recommendation/recommendations-training.txt')
+    print('Got here')
+    print(f.read_file())
 
 
