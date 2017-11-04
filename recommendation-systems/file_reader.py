@@ -2,7 +2,7 @@ import itertools
 import collections
 from scipy.sparse import csr_matrix
 
-def read_file(path):
+def read_file(path, testing=True):
     text_file = open(path, "r")
     lines = text_file.read().split("\n")
 
