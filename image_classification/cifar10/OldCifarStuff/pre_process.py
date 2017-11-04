@@ -16,12 +16,13 @@ import random
 from scipy import misc
 
 OUT_DATA_DIR = '/tmp/image_classification/tf_data/'
-IN_DATA_DIR = './HomeDepot/ImagesTrain/'
-IN_DATA_LABELS = './HomeDepot/categoriesTrain.txt'
+IN_DATA_DIR = '/home/shyamal/Downloads/HomeDepot/image_classification/train/train/train'
+IN_DATA_LABELS = '/home/shyamal/Downloads/HomeDepot/image_classification/train/Xy_train.txt'
 META_PATH = os.path.join(OUT_DATA_DIR, 'data.meta.txt')
 
-LABEL_DICT = {'Plumbing': 0, 'Outdoors': 1, 'Flooring': 2,
-              'Lighting & Ceiling Fans': 3, 'Appliances': 4}
+LABEL_DICT = {'Chandeliers': 0, 'Showerheads': 1, 'Ceiling Fans': 2,
+    'Vanity Lighting': 3, 'Floor Lamps': 4,
+    'Single Handle Bathroom Sink Faucets': 5}
 
 
 
@@ -39,9 +40,9 @@ def convert_images():
     with open(IN_DATA_LABELS, 'r') as f:
         for line in f:
             line_info = line[:-1].split('|')
-            if len(line_info) != 3:
+            if len(line_info) != 2:
                 print('Error:', line)
-            labels[line_info[2]] = LABEL_DICT[line_info[1]]
+            labels[line_info[0]] = LABEL_DICT[line_info[1]]
 
 
     # iterate through images, and write raw to OUT_DATA_DIR
@@ -54,24 +55,22 @@ def convert_images():
 
     print('Converting images to raw binary. This may take some time...')
 
-    for dir_num in range(141):
+    i = 0
+    for filename in os.listdir(IN_DATA_DIR):
         # dynamic terminal output
-        sys.stdout.write('\r%03d/140' % dir_num)
-        sys.stdout.flush()
+        if (i % 100 == 0):
+            sys.stdout.write('\r%03d / %d' % (i, len(labels)))
+            sys.stdout.flush()
 
-        dir_name = os.path.join(IN_DATA_DIR, 'part-%05d' % dir_num)
-        # if not os.path.exists(dir_name):
-        #     print('Error:', dir_name)
-        for filename in os.listdir(dir_name):
-            im = misc.imread(os.path.join(dir_name, filename), mode='RGB')
-            # if im.ndim != 3:
-            #     print('Error:', filename, im.shape)
+        if filename.endswith(".jpg"):
+            im = misc.imread(os.path.join(IN_DATA_DIR, filename), mode='RGB')
             ind = random.randrange(6)
 
-            files[ind].write(bytes([labels[filename]]))
+            files[ind].write(bytes([labels[filename[:-4]]]))
             files[ind].write(im.tobytes())
             file_size[ind] += 1
-    print()
+        i += 1
+    print("DONE!")
     for f in files:
         f.close()
 
