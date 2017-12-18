@@ -6,66 +6,44 @@ from sklearn.cluster import KMeans
 from file_reader import FileReader
 from Splitter import splits
 from Tester import *
-
-def predict(prod, products, ans, inverseAns):
-
-    # print("Got inside Method")
-
-    try:
-        index = products[prod]
-        # print('not rip')
-    except KeyError:
-        print('rip')
-        return []
-
-    cluster = ans[index]
-
-    predictions = inverseAns[cluster]
-    predictions = random.sample(predictions, min(len(predictions), 10))
-
-    return predictions
+import numpy as np
+import copy
 
 def learn():
-    # splits()
-    print("Done Splitting...")
+
+    reader = FileReader("recommendations-training.txt")
+    X = reader.read_file()
 
     tester = Tester()
     test_set = tester.getTestSet()
 
-    print("Finished tester Stuff")
+    print("Finished splitting set into training set and testing set...")
 
     answers = []
 
-    reader = FileReader("training.txt")
-    X = reader.read_file()
-
-    print("Starting SVD..")
+    print("Starting SVD...")
 
     svd = TruncatedSVD(n_components=10, n_iter=10, random_state=42)
-    dense = svd.fit_transform(X)
+    dense = svd.fit_transform(X) # creates a dense, lower rank version of sparse matrix X.
 
-    print("Done with SVD, starting K Means...")
-
-    km = KMeans(n_clusters=100)
-    ans = km.fit_predict(dense)
-
-    print("Done with K Means...")
-
-    inverseAns = {cluster: [] for cluster in range(100)}
-    # centroids = svd.inverse_transform(km.cluster_centers_)
-    for trainingProdKey, trainingProdIndex in reader.product.items():
-        inverseAns[ans[trainingProdIndex]].append(trainingProdKey)
-
-    print('Done inverting clusters')
+    # Let's try doing this with out K means... Let's just try recommending with this somehow.
 
     i = 0
     for prod in test_set:
-        # print("Inside Loop")
-        answers.append(predict(prod, reader.product, ans, inverseAns))
+        entry_in_matrix = reader.product[prod]
 
+        row = list(copy.deepcopy(dense[entry_in_matrix]))
+        ans = []
+        for x in range(10):
+            rec = np.argmax(row)
+            ans.append(reader.ID[rec])
+            row.remove(row[rec])
+
+        answers.append(ans)  # NOTE: I need to finish doing this with out K means.
         if i % (len(test_set) // 100) == 0:
-            print("\rDone with {}% of predicting...".format(i / len(test_set)), end='')
+            print("\rDone with {}% of predicting...".format(i / len(test_set)))
         i = i + 1
+
 
     print()
     print(tester.checkAnswers(answers))

@@ -1,5 +1,6 @@
 import numpy as np
 
+# This method splits the training data and the test data.
 def splits():
     f = open("recommendations-training.txt", 'r')
     lines = f.readlines()
