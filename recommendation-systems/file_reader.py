@@ -27,7 +27,6 @@ class FileReader:
 
         self.real_data = collections.defaultdict(int)  # POPULATING DATA
         self.numNonzero = 0
-        print(len(self.lines))
 
         splits() # Splits the data now.
         print("Done Splitting...")
@@ -35,23 +34,24 @@ class FileReader:
         training_file = open("training.txt", "r")
         self.training_lines = training_file.read().strip().split("\n")
 
-        i = 0
+        counter = 0
         maxVal = 0
         for line in self.training_lines:
-            if i % (len(self.lines) // 10) == 0:
-                print('\r{}/{}'.format(i, len(self.lines)), end='')
+            if counter % (len(self.training_lines) // 10) == 0:
+                print('\r Done filling in {}/{} of data'.format(counter, len(self.training_lines)), end='')  # Mark progress
+
             words = line.split(",")
 
-            pairwise = itertools.combinations_with_replacement(words, 2)  # with replacement? oh, so in each line, I have a line of products.
+            pairwise = itertools.combinations_with_replacement(words, 2)  # Each line (now split into words) consists of some small number of products... we want all combinations
             for pair in pairwise:
                 if self.real_data[ (self.product[pair[0]], self.product[pair[1]]) ] == 0:
                     self.numNonzero += 2
                 self.real_data[ (self.product[pair[0]], self.product[pair[1]]) ] += 1
                 maxVal = max(maxVal, self.real_data[ (self.product[pair[0]], self.product[pair[1]]) ])
-            i += 1
+            counter += 1
 
 
-        print(maxVal, self.numNonzero)
+        # print(maxVal, self.numNonzero) What are these?
 
 
     def read_file(self, testing=True):
@@ -63,7 +63,7 @@ class FileReader:
         i = 0
         for a, b in self.real_data:
             if i % (num // 10) == 0:
-                print('\r{}/{}'.format(i, num), end='')
+                print('\r Done inserting {}/{} of data into matrix'.format(i, num), end='')
             if self.real_data[(a, b)] == 0:
                 print('rip?')
             else:
